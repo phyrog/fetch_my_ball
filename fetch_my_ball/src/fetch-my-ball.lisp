@@ -18,6 +18,9 @@
             ((string= (elt name 0) "gripper") (setf *gripper-state* val))))))
   (setf *pub* (advertise "joint_command" "nxt_msgs/JointCommand")))
 
+(defun fetch-my-ball ()
+  )
+
 (defun drive-forward ()
   "Drive forward"
   (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.712 0.7)))
@@ -119,18 +122,31 @@
     (unsubscribe *border-patrol-subscriber*)
     (format t "Unsubscribed color sensor.~%")))
 
-(defun on-invalid-crossing ()
-  (stop-driving))
-
 (defun turn (degree)
   (let* ((l (* 0.7125 (signum degree)))
          (r (* 0.7 (- (signum degree))))
          (l-joint-state (with-fields ((position position)) *l-motor-joint-state* position))
          (r-joint-state (with-fields ((position position)) *r-motor-joint-state* position)))
     (send-joint-commands '("l_motor_joint" "r_motor_joint") `(,l ,r))
-    (motor-event-trigger "l_motor_joint" (lambda (pos vel eff) 
-      (>= (abs (- pos (elt l-joint-state 0))) (abs (* 1.6 degree)))) (lambda (a)
-        (send-joint-command "l_motor_joint" 0.0)))
-    (motor-event-trigger "r_motor_joint" (lambda (pos vel eff)
-      (>= (abs (- pos (elt r-joint-state 0))) (abs (* 1.6 degree)))) (lambda (a)
-        (send-joint-command "r_motor_joint" 0.0)))))
+    (motor-event-trigger
+     "l_motor_joint"
+     (lambda (pos vel eff)
+       (declare (ignore vel eff))
+       (>= (abs (- pos (elt l-joint-state 0)))
+           (abs (* 1.6 degree))))
+     (lambda (a)
+       (declare (ignore a))
+       (send-joint-command "l_motor_joint" 0.0)))
+    (motor-event-trigger
+     "r_motor_joint"
+     (lambda (pos vel eff)
+       (declare (ignore vel eff))
+       (>= (abs (- pos (elt r-joint-state 0)))
+           (abs (* 1.6 degree))))
+     (lambda (a)
+       (declare (ignore a))
+       (send-joint-command "r_motor_joint" 0.0)))))
+
+(defun on-invalid-crossing ()
+  (stop-driving)
+  (turn 180))
