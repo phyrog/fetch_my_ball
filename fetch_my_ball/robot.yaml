@@ -15,7 +15,7 @@ nxt_robot:
     frame_id: ultrasonic_frame
     name: ultrasonic_sensor
     port: PORT_1
-    spread_angle: 0.2
+    spread_angle: 0.01
     min_range: 0.01
     max_range: 2.5
     desired_frequency: 30.0

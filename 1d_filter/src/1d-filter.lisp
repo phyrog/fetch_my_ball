@@ -1,0 +1,57 @@
+(in-package :1d-filter)
+
+(defparameter *backlog* nil)
+(defparameter *thread-lock* (make-lock))
+(defparameter *thread-lock-condition* (make-condition-variable))
+(defparameter *listener-node* nil)
+(defparameter *fn* nil)
+(defparameter *radius* nil)
+(defparameter *weight* nil)
+(defparameter *producer-thread* nil)
+(defparameter *consumer-thread* nil)
+(defparameter *subscriber* nil)
+
+(defun main (fn radius weight in-topic out-topic in-topic-type out-topic-type)
+  (setf *in-topic* in-topic)
+  (setf *in-topic-type* in-topic-type)
+  (setf *out-topic* out-topic)
+  (setf *out-topic-type* out-topic-type)
+  (setf *fn* fn)
+  (setf *radius* radius)
+  (setf *weight* weight)
+  (unless (eq roslisp::*node-status* :running) (roslisp-utilities:startup-ros))
+  (setf *producer-thread* (make-thread #'produce-values :name "foo"))
+  (setf *consumer-thread* (make-thread #'consume-values)))
+
+(defun produce-values ()
+  (setf *subscriber* (subscribe *in-topic* *in-topic-type* (lambda (value)
+    (with-lock-held (*thread-lock*)
+      (let ((v (if (< (with-fields ((range range)) value range) 2.5) (append *backlog* `(,value)) *backlog*)))
+        (setf *backlog* v))
+      (condition-notify *thread-lock-condition*))))))
+
+(defun consume-values ()
+  (let ((pub (advertise *out-topic* *out-topic-type*)))
+    (acquire-lock *thread-lock* t)
+    (loop
+      (let ((value-list nil))
+        (if (>= (length *backlog*) *radius*)
+          (progn
+            (setf value-list (subseq *backlog* 0 *radius*))
+            (setf *backlog* (cdr *backlog*))))
+        (if value-list
+          (publish pub (apply *fn* `(,value-list)))))
+      (condition-wait *thread-lock-condition* *thread-lock*))))
+
+(defun end-filter ()
+  (unsubscribe *subscriber*)
+  (destroy-thread *producer-thread*)
+  (destroy-thread *consumer-thread*))
+
+(defun avg (l)
+  (make-msg "std_msgs/Float64" :data (/ (apply #'+ (mapcar (lambda (a) (with-fields ((data data)) a data)) l)) *radius*)))
+
+(defun average-dist (l)
+  (let ((vals (mapcar (lambda (a w)
+                        (with-fields ((range range)) a (* range w))) l *weight*)))
+    (make-msg "std_msgs/Float64" :data (apply #'+ vals))))

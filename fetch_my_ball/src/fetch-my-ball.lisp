@@ -5,9 +5,17 @@
 (defvar *border-patrol-subscriber*)
 (defvar *joint-state-subscriber-hash-table* (make-hash-table))
 (defvar *suspected-crossing* nil)
+(defvar *l-motor-joint-state*)
+(defvar *r-motor-joint-state*)
+(defvar *gripper-state*)
 
 (defun init-driver ()
   (roslisp-utilities:startup-ros)
+  (subscribe "joint_state" "sensor_msgs/JointState" (lambda (val)
+    (with-fields ((name name)) val
+      (cond ((= (car name) "l_motor_joint") (setf *l-motor-joint-state* val))
+            ((= (car name) "r_motor_joint") (setf *r-motor-joint-state* val))
+            ((= (car name) "gripper") (setf *gripper-state* val))))))
   (setf *pub* (advertise "joint_command" "nxt_msgs/JointCommand")))
 
 (defun drive-forward ()
@@ -117,3 +125,16 @@
 
 (defun on-invalid-crossing ()
   (stop-driving))
+
+(defun turn (degree)
+  (let* ((l (* 0.8 (signum degree))
+         (r (- r)))
+         (l-joint-state (with-fields ((position position)) *l-motor-joint-state* position))
+         (r-joint-state (with-fields ((position position)) *r-motor-joint-state* position)))
+    (send-joint-commands '("l_motor_joint" "r_motor_joint") `(,l ,r))
+    (motor-event-trigger "l_motor_joint" (lambda (pos vel eff) 
+      (>= (- pos l-joint-state) (* 2.1181 degree))) (lambda (a)
+        (send-joint-command "l_motor-joint" 0.0)))
+    (motor-event-trigger "r_motor_joint" (lambda (pos vel eff)
+      (>= (- pos r-joint-state) (* 2.1181 degree))) (lambda (a)
+        (send-joint-command "r_motor-joint" 0.0)))))
