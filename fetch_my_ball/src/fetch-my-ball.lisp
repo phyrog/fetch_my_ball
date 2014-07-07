@@ -122,18 +122,21 @@
     (unsubscribe *border-patrol-subscriber*)
     (format t "Unsubscribed color sensor.~%")))
 
-(defun turn (degree)
-  (let* ((l (* 0.7125 (signum degree)))
-         (r (* 0.7 (- (signum degree))))
-         (l-joint-state (with-fields ((position position)) *l-motor-joint-state* position))
-         (r-joint-state (with-fields ((position position)) *r-motor-joint-state* position)))
-    (send-joint-commands '("l_motor_joint" "r_motor_joint") `(,l ,r))
+(defun on-invalid-crossing ()
+  (stop-driving))
+
+;(defun set-velocity (motor value)
+;  (motor-event-trigger motor (lambda (pos vel eff)
+;                               ())))
+
+(defun turn (degree &optional abort-predicate)
     (motor-event-trigger
      "l_motor_joint"
      (lambda (pos vel eff)
        (declare (ignore vel eff))
-       (>= (abs (- pos (elt l-joint-state 0)))
-           (abs (* 1.6 degree))))
+       (or (>= (abs (- pos (elt l-joint-state 0)))
+               (abs (* 1.6 degree)))
+           abort-predicate))
      (lambda (a)
        (declare (ignore a))
        (send-joint-command "l_motor_joint" 0.0)))
@@ -141,8 +144,9 @@
      "r_motor_joint"
      (lambda (pos vel eff)
        (declare (ignore vel eff))
-       (>= (abs (- pos (elt r-joint-state 0)))
-           (abs (* 1.6 degree))))
+       (or (>= (abs (- pos (elt r-joint-state 0)))
+               (abs (* 1.6 degree)))
+           abort-predicate))
      (lambda (a)
        (declare (ignore a))
        (send-joint-command "r_motor_joint" 0.0)))))
