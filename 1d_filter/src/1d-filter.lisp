@@ -55,3 +55,6 @@
   (let ((vals (mapcar (lambda (a w)
                         (with-fields ((range range)) a (* range w))) l *weight*)))
     (make-msg "std_msgs/Float64" :data (apply #'+ vals))))
+
+(defun filter-smooth ()
+  (main #'average-dist 7 '(0.080808 0.161616 0.333333 0 0.333333 0.161616 0.080808) "/ultrasonic_sensor" "/avg_range" "sensor_msgs/Range" "std_msgs/Float64"))
