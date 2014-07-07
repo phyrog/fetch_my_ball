@@ -13,14 +13,14 @@
   (roslisp-utilities:startup-ros)
   (subscribe "joint_state" "sensor_msgs/JointState" (lambda (val)
     (with-fields ((name name)) val
-      (cond ((= (car name) "l_motor_joint") (setf *l-motor-joint-state* val))
-            ((= (car name) "r_motor_joint") (setf *r-motor-joint-state* val))
-            ((= (car name) "gripper") (setf *gripper-state* val))))))
+      (cond ((string= (elt name 0) "l_motor_joint") (setf *l-motor-joint-state* val))
+            ((string= (elt name 0) "r_motor_joint") (setf *r-motor-joint-state* val))
+            ((string= (elt name 0) "gripper") (setf *gripper-state* val))))))
   (setf *pub* (advertise "joint_command" "nxt_msgs/JointCommand")))
 
 (defun drive-forward ()
   "Drive forward"
-  (send-joint-commands '("r_motor_joint" "l_motor_joint") '(0.7 0.7)))
+  (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.712 0.7)))
 
 (defun stop-driving ()
   "Stop driving"
@@ -43,10 +43,6 @@
 
 (defun relax-gripper ()
   (send-joint-command "gripper" 0.0))
-
-(defun turn (direction)
-  (send-joint-command "l_motor_joint" (* direction 0.8))
-  (send-joint-command "r_motor_joint" (* -1 (* direction 0.8))))
 
 (defun drive-angle (radius angle)
   (let* ((w-a-radius (- radius (/ *wheelbase* 2.0)))
@@ -127,14 +123,14 @@
   (stop-driving))
 
 (defun turn (degree)
-  (let* ((l (* 0.8 (signum degree))
-         (r (- r)))
+  (let* ((l (* 0.7125 (signum degree)))
+         (r (* 0.7 (- (signum degree))))
          (l-joint-state (with-fields ((position position)) *l-motor-joint-state* position))
          (r-joint-state (with-fields ((position position)) *r-motor-joint-state* position)))
     (send-joint-commands '("l_motor_joint" "r_motor_joint") `(,l ,r))
     (motor-event-trigger "l_motor_joint" (lambda (pos vel eff) 
-      (>= (- pos l-joint-state) (* 2.1181 degree))) (lambda (a)
-        (send-joint-command "l_motor-joint" 0.0)))
+      (>= (abs (- pos (elt l-joint-state 0))) (abs (* 1.6 degree)))) (lambda (a)
+        (send-joint-command "l_motor_joint" 0.0)))
     (motor-event-trigger "r_motor_joint" (lambda (pos vel eff)
-      (>= (- pos r-joint-state) (* 2.1181 degree))) (lambda (a)
-        (send-joint-command "r_motor-joint" 0.0)))))
+      (>= (abs (- pos (elt r-joint-state 0))) (abs (* 1.6 degree)))) (lambda (a)
+        (send-joint-command "r_motor_joint" 0.0)))))
