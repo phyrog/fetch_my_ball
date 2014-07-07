@@ -60,7 +60,7 @@
     (format t "~a ~a" effort-a effort-b)
     (send-joint-commands '("l_motor_joint" "r_motor_joint") `(,effort-a ,effort-b))))
 
-(defun motor-event-trigger-callback (subscriber-key motor predicate callback msg)
+(defun motor-event-trigger-callback (subscriber-key motor predicate callback msg f-callback)
   (with-fields ((name name)
                 (position position)
                 (velocity velocity)
@@ -72,9 +72,11 @@
                 (progn
                   (unsubscribe (gethash subscriber-key *joint-state-subscriber-hash-table*))
                   (remhash subscriber-key *joint-state-subscriber-hash-table*)
-                  (apply callback `(,msg))))))))
+                  (apply callback `(,msg)))
+                (when f-callback
+                  (apply f-callback '())))))))
 
-(defun motor-event-trigger (motor predicate callback)
+(defun motor-event-trigger (motor predicate callback &optional f-callback)
   (let ((key (alexandria:make-gensym "joint-state")))
     (setf (gethash key *joint-state-subscriber-hash-table*)
           (subscribe "/joint_state" "sensor_msgs/JointState"
@@ -83,7 +85,8 @@
                                       motor
                                       predicate
                                       callback
-                                      msg)))))
+                                      msg
+                                      f-callback)))))
   nil)
 
 (defun border-patrol (msg)
@@ -123,13 +126,20 @@
     (format t "Unsubscribed color sensor.~%")))
 
 (defun on-invalid-crossing ()
-  (stop-driving))
+  (stop-driving)
+  (turn 180))
+
 
 ;(defun set-velocity (motor value)
 ;  (motor-event-trigger motor (lambda (pos vel eff)
 ;                               ())))
 
 (defun turn (degree &optional abort-predicate)
+  (let* ((l (* 0.7125 (signum degree)))
+         (r (* 0.7 (- (signum degree))))
+         (l-joint-state (with-fields ((position position)) *l-motor-joint-state* position))
+         (r-joint-state (with-fields ((position position)) *r-motor-joint-state* position)))
+    (send-joint-commands '("l_motor_joint" "r_motor_joint") `(,l ,r))
     (motor-event-trigger
      "l_motor_joint"
      (lambda (pos vel eff)
@@ -151,6 +161,5 @@
        (declare (ignore a))
        (send-joint-command "r_motor_joint" 0.0)))))
 
-(defun on-invalid-crossing ()
-  (stop-driving)
-  (turn 180))
+(defun search-ball (max-degree)
+  )
