@@ -23,4 +23,4 @@ nxt_robot:
     frame_id: color_frame
     name: color_sensor
     port: PORT_4
-    desired_frequency: 5.0
+    desired_frequency: 15.0
