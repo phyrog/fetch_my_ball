@@ -1,8 +1,10 @@
 (in-package :fetch-my-ball)
 
-(setf *wheelbase* 11.5)
+(defvar *wheelbase* 11.5)
+(defvar *pub*)
 (defvar *border-patrol-subscriber*)
-(setf *suspected-crossing* nil)
+(defvar *joint-state-subscriber-hash-table* (make-hash-table))
+(defvar *suspected-crossing* nil)
 
 (defun init-driver ()
   (roslisp-utilities:startup-ros)
@@ -51,6 +53,32 @@
     (format t "~a ~a" effort-a effort-b)
     (send-joint-commands '("l_motor_joint" "r_motor_joint") `(,effort-a ,effort-b))))
 
+(defun motor-event-trigger-callback (subscriber-key motor predicate callback msg)
+  (with-fields ((name name)
+                (position position)
+                (velocity velocity)
+                (effort effort))
+      msg
+      (if (string= (elt name 0) motor)
+          (progn
+            (if (apply predicate `(,(elt position 0) ,(elt velocity 0) ,(elt effort 0)))
+                (progn
+                  (unsubscribe (gethash subscriber-key *joint-state-subscriber-hash-table*))
+                  (remhash subscriber-key *joint-state-subscriber-hash-table*)
+                  (apply callback `(,msg))))))))
+
+(defun motor-event-trigger (motor predicate callback)
+  (let ((key (alexandria:make-gensym "joint-state")))
+    (setf (gethash key *joint-state-subscriber-hash-table*)
+          (subscribe "/joint_state" "sensor_msgs/JointState"
+                     #'(lambda (msg) (motor-event-trigger-callback
+                                      key
+                                      motor
+                                      predicate
+                                      callback
+                                      msg)))))
+  nil)
+
 (defun border-patrol (msg)
   (with-fields ((r r)
                 (g g)
@@ -86,3 +114,6 @@
   (unless (eq *border-patrol-subscriber* nil)
     (unsubscribe *border-patrol-subscriber*)
     (format t "Unsubscribed color sensor.~%")))
+
+(defun on-invalid-crossing ()
+  (stop-driving))
