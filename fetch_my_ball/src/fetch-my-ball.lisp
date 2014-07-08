@@ -12,7 +12,7 @@
 (defvar *gripper-state*)
 (defvar *avg-range-lock* (make-lock "avg-range-lock"))
 (defvar *avg-range* '(nil nil nil))
-(defvar *max-grasping-range* 0.02)
+(defvar *max-grasping-range* 0.06)
 
 (defun init-driver ()
   (format t "Starting up ros.~%")
@@ -51,6 +51,7 @@
 
 (defun drive-forward (&optional distance (abort-predicate (lambda () NIL)))
   "Drive forward"
+  (format t "Driving forward ~a m.~%" distance)
   (let* ((l-joint-state (elt (with-fields ((position position)) *l-motor-joint-state* position) 0))
          (r-joint-state (elt (with-fields ((position position)) *r-motor-joint-state* position) 0))
          (distance-to-go (if distance
@@ -79,6 +80,24 @@
      (lambda (a)
        (declare (ignore a))
        (send-joint-command "r_motor_joint" 0.0)))))
+
+(defun get-avg-rl-joint-state ()
+  (let* ((l-joint-state (elt (with-fields ((position position)) *l-motor-joint-state* position) 0))
+         (r-joint-state (elt (with-fields ((position position)) *r-motor-joint-state* position) 0)))
+    (/ (+ l-joint-state r-joint-state) 2)))
+
+(defun drive-forward-slowly (distance &optional (abort-predicate (lambda () NIL)))
+  (format t "Driving forward slowly ~a m.~%" distance)
+  (let* ((rl-joint-state (get-avg-rl-joint-state))
+         (distance-to-go (* pi (/ distance *wheel-circumference*) 1.7)))
+    (format t "distance-to-go: ~a~%" distance-to-go)
+    (loop while (and (< (- (get-avg-rl-joint-state) rl-joint-state)
+                        distance-to-go)
+                    (not (apply abort-predicate '()))) do
+                      ;;(sleep 0.01)
+                      (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.64 0.621))
+                      (sleep 0.05)
+                      (stop-driving))))
 
 (defun stop-driving ()
   "Stop driving"
@@ -240,4 +259,6 @@
           nil))))
 
 (defun approach-until-max-range ()
-  (let ((last-known-range (get-avg-range)))))
+  (let ((last-known-range (get-avg-range)))
+    (drive-forward (- last-known-range *max-grasping-range*)
+                   #'(lambda () (not (get-avg-range))))))
