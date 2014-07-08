@@ -1,6 +1,8 @@
 (in-package :fetch-my-ball)
 
-(defvar *wheelbase* 11.5)
+(defvar *wheelbase* 0.115)
+(defvar *wheel-radius* 0.027)
+(defvar *wheel-circumference* (* 2 pi *wheel-radius*))
 (defvar *pub*)
 (defvar *border-patrol-subscriber*)
 (defvar *joint-state-subscriber-hash-table* (make-hash-table))
@@ -10,6 +12,7 @@
 (defvar *gripper-state*)
 (defvar *avg-range-lock* (make-lock "avg-range-lock"))
 (defvar *avg-range* '(nil nil nil))
+(defvar *max-grasping-range* 0.02)
 
 (defun init-driver ()
   (format t "Starting up ros.~%")
@@ -46,9 +49,36 @@
 (defun fetch-my-ball ()
   )
 
-(defun drive-forward ()
+(defun drive-forward (&optional distance (abort-predicate (lambda () NIL)))
   "Drive forward"
-  (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.712 0.7)))
+  (let* ((l-joint-state (elt (with-fields ((position position)) *l-motor-joint-state* position) 0))
+         (r-joint-state (elt (with-fields ((position position)) *r-motor-joint-state* position) 0))
+         (distance-to-go (if distance
+                             (* pi (/ distance *wheel-circumference*) 1.7))))
+    (format t "distance-to-go: ~a~%" distance-to-go)
+    (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.712 0.7))
+    (motor-event-trigger
+     "l_motor_joint"
+     (lambda (pos vel eff)
+       (declare (ignore vel eff))
+       (or (if distance
+               (>= (- pos l-joint-state)
+                   distance-to-go))
+           (apply abort-predicate '())))
+     (lambda (a)
+       (declare (ignore a))
+       (send-joint-command "l_motor_joint" 0.0)))
+    (motor-event-trigger
+     "r_motor_joint"
+     (lambda (pos vel eff)
+       (declare (ignore vel eff))
+       (or (if distance
+               (>= (- pos r-joint-state)
+                   distance-to-go))
+           (apply abort-predicate '())))
+     (lambda (a)
+       (declare (ignore a))
+       (send-joint-command "r_motor_joint" 0.0)))))
 
 (defun stop-driving ()
   "Stop driving"
@@ -188,32 +218,26 @@
        (declare (ignore a))
        (send-joint-command "r_motor_joint" 0.0)))))
 
-(defun search-ball (max-degree)
-  (format t "Searching ball.~%")
+(defun find-ball (max-degree)
+  (format t "Finding ball.~%") 
   (turn max-degree #'(lambda ()
                        (with-lock-held (*avg-range-lock*)
-                                        (let ((one (first *avg-range*))
-                                              (two (second *avg-range*))
-                                              (three (third *avg-range*)))
-                                          (format t "Range: ~a, ~a, ~a.~%" one two three)
-                                          (if (and one two three)
-                                              (progn
-                                                (format t "Obstacle in Range: ~a, ~a, ~a.~%" one two three)
-                                                T)))))))
+                         (let ((one (first *avg-range*))
+                               (two (second *avg-range*))
+                                   (three (third *avg-range*)))
+                           (if (and one two three)
+                               (progn
+                                 (format t "Obstacle in Range: ~a, ~a, ~a.~%" one two three)
+                                 T)))))))
 
-#|
-andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % rostopic type avg_range                     
-std_msgs/Float64
-andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % rosmsg show std_msgs/Float64
-float64 data
+(defun get-avg-range ()
+  (with-lock-held (*avg-range-lock*)
+    (let ((one (first *avg-range*))
+          (two (second *avg-range*))
+          (three (third *avg-range*)))
+      (if (and one two three)
+          (/ (+ one two three) 3)
+          nil))))
 
-andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % rostopic list
-/avg_range
-/color_sensor
-/joint_command
-/joint_state
-/rosout
-/rosout_agg
-/ultrasonic_sensor
-andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % 
-|#
+(defun approach-until-max-range ()
+  (let ((last-known-range (get-avg-range)))))
