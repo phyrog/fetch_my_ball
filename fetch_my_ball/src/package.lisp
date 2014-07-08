@@ -2,4 +2,4 @@
 
 (defpackage fetch-my-ball
     (:nicknames :fmb)
-  (:use :roslisp :cl :nxt_msgs-msg))
+  (:use :roslisp :cl :nxt_msgs-msg :bt))

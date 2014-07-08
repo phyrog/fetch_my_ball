@@ -26,7 +26,7 @@
 (defun produce-values ()
   (setf *subscriber* (subscribe *in-topic* *in-topic-type* (lambda (value)
     (with-lock-held (*thread-lock*)
-      (let ((v (if (< (with-fields ((range range)) value range) 2.5) (append *backlog* `(,value)) *backlog*)))
+      (let ((v (if (< (with-fields ((range range)) value range) 0.5) (append *backlog* `(,value)) *backlog*)))
         (setf *backlog* v))
       (condition-notify *thread-lock-condition*))))))
 

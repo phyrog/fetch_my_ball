@@ -8,14 +8,39 @@
 (defvar *l-motor-joint-state*)
 (defvar *r-motor-joint-state*)
 (defvar *gripper-state*)
+(defvar *avg-range-lock* (make-lock "avg-range-lock"))
+(defvar *avg-range* '(nil nil nil))
 
 (defun init-driver ()
+  (format t "Starting up ros.~%")
   (roslisp-utilities:startup-ros)
+  (format t "Subscribing to /joint_state.~%")
   (subscribe "joint_state" "sensor_msgs/JointState" (lambda (val)
     (with-fields ((name name)) val
       (cond ((string= (elt name 0) "l_motor_joint") (setf *l-motor-joint-state* val))
             ((string= (elt name 0) "r_motor_joint") (setf *r-motor-joint-state* val))
             ((string= (elt name 0) "gripper") (setf *gripper-state* val))))))
+  #|
+  (format t "Starting up 1d filter.~%")
+  (1d-filter::filter-smooth)
+  (sleep 1)
+  (format t "Subscribing to /avg_range.~%")
+  (subscribe "/avg_range" "std_msgs/Float64"
+             (lambda (msg)
+               (with-fields ((data data)) msg
+                 (setf *avg-range* data))))
+  |#
+  (format t "Subscribing to /ultrasonic_sensor.~%")
+  (subscribe "/ultrasonic_sensor" "sensor_msgs/Range"
+             #'(lambda (msg)
+                 (with-fields ((range range)) msg
+                   (with-lock-held (*avg-range-lock*)
+                                    (push (if (< range 0.5)
+                                              range
+                                              nil)
+                                          *avg-range*)
+                                    (butlast *avg-range*)))))
+  (format t "Advertising to /joint_command.~%")
   (setf *pub* (advertise "joint_command" "nxt_msgs/JointCommand")))
 
 (defun fetch-my-ball ()
@@ -134,7 +159,9 @@
 ;  (motor-event-trigger motor (lambda (pos vel eff)
 ;                               ())))
 
-(defun turn (degree &optional abort-predicate)
+(defun turn (degree &optional (abort-predicate (lambda () NIL)))
+  (format t "Turning ~a degree.~%" degree)
+  (setf degree (* degree 0.0174532925))
   (let* ((l (* 0.7125 (signum degree)))
          (r (* 0.7 (- (signum degree))))
          (l-joint-state (with-fields ((position position)) *l-motor-joint-state* position))
@@ -146,7 +173,7 @@
        (declare (ignore vel eff))
        (or (>= (abs (- pos (elt l-joint-state 0)))
                (abs (* 1.6 degree)))
-           abort-predicate))
+           (apply abort-predicate '())))
      (lambda (a)
        (declare (ignore a))
        (send-joint-command "l_motor_joint" 0.0)))
@@ -156,10 +183,37 @@
        (declare (ignore vel eff))
        (or (>= (abs (- pos (elt r-joint-state 0)))
                (abs (* 1.6 degree)))
-           abort-predicate))
+           (apply abort-predicate '())))
      (lambda (a)
        (declare (ignore a))
        (send-joint-command "r_motor_joint" 0.0)))))
 
 (defun search-ball (max-degree)
-  )
+  (format t "Searching ball.~%")
+  (turn max-degree #'(lambda ()
+                       (with-lock-held (*avg-range-lock*)
+                                        (let ((one (first *avg-range*))
+                                              (two (second *avg-range*))
+                                              (three (third *avg-range*)))
+                                          (format t "Range: ~a, ~a, ~a.~%" one two three)
+                                          (if (and one two three)
+                                              (progn
+                                                (format t "Obstacle in Range: ~a, ~a, ~a.~%" one two three)
+                                                T)))))))
+
+#|
+andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % rostopic type avg_range                     
+std_msgs/Float64
+andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % rosmsg show std_msgs/Float64
+float64 data
+
+andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % rostopic list
+/avg_range
+/color_sensor
+/joint_command
+/joint_state
+/rosout
+/rosout_agg
+/ultrasonic_sensor
+andz@andzihmseinub ~/LispTut/catkin_ws/src/fetch_my_ball (git)-[master] % 
+|#
