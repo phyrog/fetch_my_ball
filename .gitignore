@@ -1,0 +1,12 @@
+*.aux
+*.blg
+*.lof
+*.log
+*.out
+*.pdf
+*.run.xml
+*.tcp
+*.tdo
+*.toc
+*blx.bib
+*.synctex
