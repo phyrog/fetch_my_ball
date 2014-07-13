@@ -1,0 +1,59 @@
+
+\usepackage{totcount}
+\usepackage{pgf}
+\usepackage{tikz}
+\usepackage{setspace}
+\usepackage[colorinlistoftodos,backgroundcolor=orange!50,bordercolor=orange]{todonotes}
+
+\newtotcounter{review}
+\newtotcounter{reviewTable}
+\newtotcounter{general}
+\newtotcounter{generalTable}
+
+\newcommand{\createtodo}[3]{%
+	\newtotcounter{todocounter#1}%
+	\definecolor{#1Linie}{rgb}{#2}%
+	\definecolor{#1Innen}{rgb}{#3}%
+	\expandafter\newcommand\csname #1\endcsname[1]{\stepcounter{todocounter#1}%
+		\todo[inline,caption={#1: ##1},linecolor=#1Linie,backgroundcolor=#1Innen,bordercolor=#1Linie]%
+		{\scriptsize\begin{spacing}{0.5}#1: ##1\end{spacing}}%
+	}%
+}
+
+%\createtodo{name}{Farbe Rand}{Farbe innen}
+\createtodo{hannes}{0,0,0}{.6,.6,0}
+\createtodo{andz}{0,0,0}{1,0,0}
+\createtodo{tom}{0,0,0}{.6,.6,1}
+
+\definecolor{reviewInnen}{rgb}{.76,.76,255}
+\definecolor{reviewLinie}{rgb}{0,0,0}
+\newcommand{\review}[1]{\stepcounter{review}\todo[caption={#1},linecolor=reviewLinie,backgroundcolor=reviewInnen,bordercolor=reviewLinie]{\scriptsize\begin{spacing}{0.5}#1\end{spacing}}}
+
+\newcommand{\smalltodo}[2][]{\stepcounter{general}\todo[inline,caption={#2}]{\scriptsize\begin{spacing}{0.5}#2\end{spacing}}}
+\newcommand{\tabletodo}[1]{\stepcounter{generalTable}\begin{minipage}{3cm}\begin{spacing}{0.5}\todo[inline]{\scriptsize #1}\end{spacing}\end{minipage}}
+\newcommand{\tablereview}[1]{\stepcounter{reviewTable}\begin{minipage}{3cm}\begin{spacing}{0.5}\todo[inline,backgroundcolor=reviewInnen,bordercolor=reviewLinie,inline]{\scriptsize #1}\end{spacing}\end{minipage}}
+
+\newcommand{\printtodo}{%
+	\clearpage
+	\fancyhead[RF]{}
+	\section*{Todos}
+		Folgende (personalisierte) Todos können verwendet werden:
+		\begin{center}
+			\renewcommand{\arraystretch}{1.3}
+			\begin{tabularx}{14.5cm}{lp{6cm}lr}\toprule
+				\textbf{Farbe}																																																&	\textbf{Ausführende Person}						&	\textbf{Befehl}				& \textbf{Unerledigt}					\\\midrule
+				\raisebox{-.7ex}{\tikz \draw[rounded corners,color=andzLinie,fill=andzInnen] (0,0) rectangle (.5,.5);}				&	Andreas																&	\verb+\andz{}+				&	\total{todocounterandz}			\\
+				\raisebox{-.7ex}{\tikz \draw[rounded corners,color=hannesLinie,fill=hannesInnen] (0,0) rectangle (.5,.5);}		&	Hannes																&	\verb+\hannes{}+			&	\total{todocounterhannes}		\\
+				\raisebox{-.7ex}{\tikz \draw[rounded corners,color=tomLinie,fill=tomInnen] (0,0) rectangle (.5,.5);}	  			&	Tom   																&	\verb+\tom{}+ 				&	\total{todocountertom}			\\
+				\raisebox{-.7ex}{\tikz \draw[rounded corners,color=orange,fill=orange!50] (0,0) rectangle (.5,.5);}						&	\textit{allgemeines Todo}							&	\verb+\smalltodo{}+		&	\total{general}							\\
+				\raisebox{-.7ex}{\tikz \draw[rounded corners,color=orange,fill=orange!50] (0,0) rectangle (.5,.5);}						&	\textit{allgemeines Todo in Tabellen}	&	\verb+\tabletodo{}+		&	\total{generalTable}				\\
+				\raisebox{-.7ex}{\tikz \draw[rounded corners,color=reviewLinie,fill=reviewInnen] (0,0) rectangle (.5,.5);}		&	\textit{Todo für Reviews}							&	\verb+\review{}+			&	\total{review}							\\
+				\raisebox{-.7ex}{\tikz \draw[rounded corners,color=reviewLinie,fill=reviewInnen] (0,0) rectangle (.5,.5);}		&	\textit{Todo für Reviews in Tabellen}	&	\verb+\tablereview{}+	&	\total{reviewTable}					\\
+				\bottomrule%
+			\end{tabularx}%
+		\end{center}%
+		\clearpage
+		\listoftodos[Todo]%
+		\smalltodo{todos entfernen}%
+		%\clearpage%
+}%

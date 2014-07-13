@@ -1,0 +1,101 @@
+\documentclass{fetch-my-doc}
+\usepackage{tabu}
+\usepackage{multirow}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{breakurl}
+\usepackage{tocloft}
+\usepackage{pdflscape}
+\usepackage{ltxtable}
+\usepackage{filecontents}
+
+\sisetup{output-decimal-marker = {,}}
+
+\definecolor{darkgreen}{rgb}{0,.5,0}
+
+\hypersetup{breaklinks,colorlinks=true,citecolor=darkgreen,urlcolor=blue,linkcolor=blue,anchorcolor=blue} %,pdftex=true}
+
+\newcommand{\hypref}[1]{\SaveVerb{myverb}|#1|\hyperlink{#1}{\protect\UseVerb{myverb}}}
+
+\newcommand{\sep}{\begin{center}\noindent\rule{.5\textwidth}{0.5pt}\end{center}}
+
+\newcommand{\rc}{\rowcolor{lightgray!40}}
+\newcommand{\cc}{\columncolor{lightgray!40}}
+
+\makeatletter
+\newcommand*{\shift}[2]{%
+  \settowidth{\@tempdima}{#2}%
+  \makebox[\@tempdima]{\hspace*{#1}#2}%
+}
+\makeatother
+
+% Linebreak nach paragraph
+\makeatletter
+\renewcommand\paragraph{%
+   \@startsection{paragraph}{4}{0mm}%
+      {-\baselineskip}%
+      {.5\baselineskip}%
+      {\normalfont\normalsize\bfseries}}
+\makeatother
+
+\def\imagetop#1{\raisebox{2.5em}{\vtop{\null\hbox{#1}}}}
+
+%\renewcommand{\datum}{14.10.2012}
+\renewcommand{\datum}{\today}
+\renewcommand{\abgabe}{14.07.2014}
+\renewcommand{\version}{1.0.0}
+	%	Versionierung:
+	%	x.y.z
+	%	- x hoch bei ?
+	%	- y hoch bei größeren Änderungen von ganzen Absätzen.
+	%	- z hoch bei kleinen Verbesserungen wie Rechtschreibung, Satzbau, usw.
+\renewcommand{\typ}{Dokumentation}
+\renewcommand{\titel}{Dokumentation}
+\renewcommand{\libdir}{./}
+\bibliography{referenzen}
+
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+	\sloppy
+	\input{fetch-my-doc-title.tex}
+	\addtolength{\textheight}{\versch}
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	% TODOS ENTFERNEN NICHT VERGESSEN! %
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\printtodo
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\addtocontents{toc}{\protect\sloppy}
+	\tableofcontents
+	\clearpage
+	
+	%\section{Versions- und Änderungsgeschichte}\label{sec:versionsaenderung}
+		%\begin{tabularx}{\textwidth}{ccX}
+			%\toprule
+			%Version			&	Datum						&	Änderungen	\\\midrule
+			%1.0.0				&	14.07.2014			&	Erste veröffentlichte Version	\\
+			%\bottomrule
+		%\end{tabularx}	
+		%\clearpage
+	
+	\rowcolors*{0}{}{lightgray!40}
+	
+	%%%%%%%%%% Hier beginnt das Dokument %%%%%%%%%%
+	\section{Einführung}\label{sec:Einfuehrung}
+		\autor{...}
+				
+		%\subsection{Referenzen}\label{sec:Referenzen}
+			%Es folgt eine Auflistung aller Referenzen zu den im Architekturentwurf erwähnten Fremdressourcen und verwendeten Dokumenten.
+				%\printbibliography[heading=none]
+		%
+		
+	%\clearpage
+	%\listoffigures
+	
+	%\listoftables
+	%\clearpage
+	%\appendix
+	
+\end{document}
