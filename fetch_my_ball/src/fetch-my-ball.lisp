@@ -6,6 +6,11 @@
 (defvar *pub*)
 (defvar *border-patrol-subscriber*)
 (defvar *joint-state-subscriber-hash-table* (make-hash-table))
+(defvar *normal-r* 1.0)
+(defvar *normal-g* 0.0)
+(defvar *normal-b* 1.0)
+(defvar *avg-color-lock* (make-lock))
+(defvar *avg-color* '(nil nil nil nil nil nil))
 (defvar *suspected-crossing* nil)
 (defvar *crossing* nil)
 (defvar *crossing-lock* (make-lock))
@@ -42,11 +47,11 @@
              #'(lambda (msg)
                  (with-fields ((range range)) msg
                    (with-lock-held (*avg-range-lock*)
-                                    (push (if (< range 0.7)
-                                              range
-                                              nil)
-                                          *avg-range*)
-                                    (setf *avg-range* (butlast *avg-range*))))))
+                     (push (if (< range 0.7)
+                               range
+                               nil)
+                           *avg-range*)
+                     (setf *avg-range* (butlast *avg-range*))))))
   (format t "Advertising to /joint_command.~%")
   (setf *pub* (advertise "joint_command" "nxt_msgs/JointCommand"))
   (format t "Calling border partol.~%")
@@ -89,10 +94,16 @@
                          ;;(format t "Finished iteration. Press Enter.~%")
                          ;;(read-line)
                          (sleep 0.5)))
+               (format t "In pre grasp position.~%")
                (drive-forward-slowly 0.02 :force T)
                (close-gripper)
                (sleep 1)
-               (drive-forward 0.5 :force T)))))
+               (format t "Getting out of area.~%")
+               (drive-forward :force T :pred #'is-crossing)
+               (loop while (not (is-crossing)) do
+                 (sleep 1))
+               (drive-forward :distance 0.1 :force T)
+               (open-gripper)))))
 
 (defun drive-forward-slowly (distance &key
                                         ((:pred abort-predicate) (lambda () NIL))
@@ -112,24 +123,43 @@
     (if (and (not force) (is-crossing))
         (on-invalid-crossing))))
 
-(defun drive-forward (distance &key
-                                 ((:pred abort-predicate) (lambda () NIL))
-                                 force)
+(defun drive-forward (&key distance
+                        ((:pred abort-predicate) (lambda () NIL))
+                        force)
   "Drive forward"
   (format t "Driving forward ~a m.~%" distance)
-  (let* ((rl-pos (get-avg-rl-pos))
-         (distance-to-go (if distance
-                             (* pi (/ distance *wheel-circumference*) 1.5))))
-    (format t "distance-to-go: ~a~%" distance-to-go)
-    (loop while (and (or force (not (is-crossing)))
-                     (< (- (get-avg-rl-pos) rl-pos)
-                        distance-to-go)
-                     (not (apply abort-predicate '()))) do
-                       (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.712 0.7))
-                       (sleep 0.1)
-                       (stop-driving))
-    (if (and (not force) (is-crossing))
-        (on-invalid-crossing))))
+  (if distance
+      (let* ((rl-pos (get-avg-rl-pos))
+             (distance-to-go (if distance
+                                 (* pi (/ distance *wheel-circumference*) 1.5))))
+        (format t "distance-to-go: ~a~%" distance-to-go)
+        (loop while (and (or force (not (is-crossing)))
+                         (< (- (get-avg-rl-pos) rl-pos)
+                            distance-to-go)
+                         (not (apply abort-predicate '()))) do
+                           (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.712 0.7))
+                           (sleep 0.1)
+                           (stop-driving))
+        (if (and (not force) (is-crossing))
+            (on-invalid-crossing)))
+      (progn
+        (send-joint-commands '("l_motor_joint" "r_motor_joint") '(0.712 0.7))
+        (motor-event-trigger
+         "l_motor_joint"
+         (lambda (pos vel eff)
+           (declare (ignore pos vel eff))
+           (apply abort-predicate '()))
+         (lambda (a)
+           (declare (ignore a))
+           (send-joint-command "l_motor_joint" 0.0)))
+        (motor-event-trigger
+         "r_motor_joint"
+         (lambda (pos vel eff)
+           (declare (ignore pos vel eff))
+               (apply abort-predicate '()))
+         (lambda (a)
+           (declare (ignore a))
+           (send-joint-command "r_motor_joint" 0.0))))))
 
 (defun get-l-pos ()
   (elt (with-fields ((position position)) *l-motor-joint-state* position) 0))
@@ -154,14 +184,17 @@
     (publish-msg *pub* :name joint :effort effort)) joints efforts))
 
 (defun close-gripper ()
+  (format t "Closing gripper.~%")
   (send-joint-command "gripper" -0.6))
 
 (defun open-gripper ()
+  (format t "Opening gripper.~%")
   (send-joint-command "gripper" 0.6)
   (sleep 0.5)
   (send-joint-command "gripper" 0.0))
 
 (defun relax-gripper ()
+  (format t "Relaxing gripper.~%")
   (send-joint-command "gripper" 0.0))
 
 (defun motor-event-trigger-callback (subscriber-key motor predicate callback msg f-callback)
@@ -194,13 +227,13 @@
                                       f-callback)))))
   nil)
 
-(defun border-patrol (msg)
-  (with-fields ((r r)
-                (g g)
-                (b b))
-      msg
+(defun border-patrol ()
+  (let* ((color (get-avg-color :silenced T))
+         (r (when color (first color)))
+         (g (when color (second color)))
+         (b (when color (third color))))
     ;;(format t "r: ~a g: ~a b: ~a~%" r g b)
-    (if (not (and (= r 1) (= g 0) (= b 1)))
+    (if (not (and (eq r *normal-r*) (eq g *normal-g*) (eq b *normal-b*)))
         (progn
           ;;(format t "Not on black surface?~%")
           (if (not *suspected-crossing*)
@@ -213,7 +246,7 @@
                 (let* ((now (ros-time))
                        (time-passed (- now *suspected-crossing*)))
                   (if (> time-passed 0.25)
-                      (format t "Crossing!~%")
+                      ;;(format t "Crossing!~%")
                       (with-lock-held (*crossing-lock*)
                         (setf *crossing* t)))))))
         (progn
@@ -225,9 +258,18 @@
                 (setf *suspected-crossing* nil)))))))
 
 (defun init-border-patrol ()
+  (format t "Subscribing to /color_sensor.~%")
   (setf *border-patrol-subscriber*
-        (subscribe "/color_sensor" "nxt_msgs/Color" #'border-patrol))
-  (format t "Subscribed to color sensor.~%"))
+        (subscribe "/color_sensor" "nxt_msgs/Color"
+                   #'(lambda (msg)
+                       (with-fields ((r r)
+                                     (g g)
+                                     (b b)) msg
+                         (with-lock-held (*avg-color-lock*)
+                           (push `(,r ,g ,b) *avg-color*)
+                           (setf *avg-color* (butlast *avg-color*))))
+                       (border-patrol))))
+  nil)
 
 (defun order-back-border-patrol ()
   (unless (eq *border-patrol-subscriber* nil)
@@ -235,6 +277,7 @@
     (format t "Unsubscribed color sensor.~%")))
 
 (defun on-invalid-crossing ()
+  (format t "Intervening against invalid crossing.~%")
   (stop-driving)
   (turn 180))
 
@@ -286,12 +329,56 @@
 (defun get-avg-range (&key silenced)
   (let ((ret (with-lock-held (*avg-range-lock*)
                (let ((range *avg-range*))
-                 (if (> (length (remove-if-not #'(lambda (e) (not e)) range)) 2)
+                 (if (> (length (remove-if #'(lambda (e)  e) range)) 2)
                      nil
                      (let ((values (remove-if #'(lambda (e) (not e)) range)))
                        (/ (reduce #'+ values) (length values))))))))
     (unless silenced
       (format t "get-avg-range: ~a~%" ret))
+    ret))
+
+(defun get-colors ()
+  `(,'(0.0 0.0 0.0)
+    ,'(0.0 0.0 1.0)
+    ,'(0.0 1.0 0.0)
+    ,'(0.0 1.0 1.0)
+    ,'(1.0 0.0 0.0)
+    ,'(1.0 0.0 1.0)
+    ,'(1.0 1.0 0.0)
+    ,'(1.0 1.0 1.0)))
+
+(defun create-color-occurences-hash ()
+  (let ((hash (make-hash-table :test 'equalp)))
+    (loop for c in (get-colors) do
+      (setf (gethash c hash) 0))    
+    hash))
+
+(defun get-highest-color-count (hash)
+  (let ((highest 0)
+        (ret nil))
+    (loop for c in (get-colors) do
+      (let ((count (gethash c hash)))
+        ;;(format t "color: ~a count: ~a highest: ~a~%" c count highest)
+        (when (> count highest)
+          (progn
+            (setf highest count)
+            (setf ret c)))))
+    ret))
+
+(defun get-avg-color (&key silenced)
+  (let* ((color-occurences (create-color-occurences-hash))
+         (ret (progn
+                (with-lock-held (*avg-color-lock*)
+                (let ((color *avg-color*))
+                  (mapcar
+                   #'(lambda (e)
+                       (when (gethash e color-occurences)
+                         (setf (gethash e color-occurences)
+                               (incf (gethash e color-occurences)))))
+                   color)))
+              (get-highest-color-count color-occurences))))
+    (unless silenced
+      (format t "get-avg-color: ~a~%" ret))
     ret))
 
 (defun approach ()
@@ -303,7 +390,7 @@
         (if (< distance-to-go 0.10)
             (drive-forward-slowly distance-to-go
                            :pred #'(lambda () (not (get-avg-range))))
-            (drive-forward distance-to-go
+            (drive-forward :distance distance-to-go
                            :pred #'(lambda () (not (get-avg-range))))))
       (format t "Lost object out of eyes.~%")))
   (format t "Approched as much as I could.~%"))
