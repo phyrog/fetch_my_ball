@@ -18,7 +18,7 @@
 \usepackage{float}
 %\usepackage{rotating}
 %\usepackage{rotfloat}
-%\usepackage{lastpage}
+\usepackage{lastpage}
 %\usepackage[style=alphabetic,natbib=true,maxnames=99]{biblatex}
 %\usepackage{bibgerm}
 %\usepackage{natbib}
@@ -75,7 +75,7 @@
 \newcommand{\universitaet}{Universität Bremen}
 \newcommand{\fach}{Lisp Tutorial}
 \newcommand{\gruppe}{0}
-\newcommand{\dozent}{Jan Winkler und Moritz Matthias Tenorth}
+\newcommand{\dozent}{Jan Winkler}
 \newcommand{\tutor}{Jan Winkler}
 \newcommand{\semester}{Sommersemester 2014}
 \newcommand{\datum}{}
@@ -100,6 +100,7 @@
 %\addtolength{\textheight}{-\versch}
 
 \fancypagestyle{FirstPage}{
+  \fancyhf{}
 	%\newgeometry{left=4cm}
 	\fancyhfoffset{\marginparwidth}
 	\addtolength{\headheight}{\versch}
@@ -113,7 +114,7 @@
 		\parbox[t][\headheight]{\textwidth}{\raggedright%
 			{\universitaet}, {\semester}\linebreak%
 			{\fach}\ bei {\dozent}\linebreak%
-			Tutor: {\tutor}, Gruppe: {\gruppe}
+			Gruppe {\gruppe}
 		}%
 	}%
 }
