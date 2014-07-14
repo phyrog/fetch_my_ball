@@ -6,9 +6,9 @@
 (defvar *pub*)
 (defvar *border-patrol-subscriber*)
 (defvar *joint-state-subscriber-hash-table* (make-hash-table))
-(defvar *normal-r* 1.0)
+(defvar *normal-r* 0.0)
 (defvar *normal-g* 0.0)
-(defvar *normal-b* 1.0)
+(defvar *normal-b* 0.0)
 (defvar *avg-color-lock* (make-lock))
 (defvar *avg-color* '(nil nil nil nil nil nil))
 (defvar *suspected-crossing* nil)
@@ -22,6 +22,7 @@
 (defvar *pre-grasp-range* 0.075)
 (defvar *grasp-range* 0.02)
 (defvar *empty-gripper-range* 0.0799999982119)
+(defvar *reached-target-area* nil)
 
 (defun init-driver ()
   (format t "Starting up ros.~%")
@@ -47,7 +48,7 @@
              #'(lambda (msg)
                  (with-fields ((range range)) msg
                    (with-lock-held (*avg-range-lock*)
-                     (push (if (< range 0.7)
+                     (push (if (< range 1.2)
                                range
                                nil)
                            *avg-range*)
@@ -70,10 +71,7 @@
 (defun fetch-my-ball ()
   (let ((turn-direction 1))
     (let ((main-intents 3))
-      (loop while
-            (and
-             (> main-intents 0)
-             (not (get-avg-range))) do
+      (loop do
                (format t "Looking for ball...~%")
                (find-ball (* turn-direction 400))
                (setf turn-direction (* -1 turn-direction))
@@ -83,7 +81,7 @@
                      (decf main-intents)
                      (if (< main-intents 1)
                          (format t "Could not find ball. Aborting.~%"))))
-               (let ((angle 1))
+               (let ((angle 2))
                  (loop while
                        (not (in-pre-grasping-range)) do
                          (find-and-approach (* turn-direction
@@ -99,11 +97,19 @@
                (close-gripper)
                (sleep 1)
                (format t "Getting out of area.~%")
-               (drive-forward :force T :pred #'is-crossing)
+               (drive-forward :force T :pred
+                              #'(lambda () (when (is-crossing)
+                                               (setf *reached-target-area* T)
+                                               T)))
                (loop while (not (is-crossing)) do
-                 (sleep 1))
+                 (sleep 0.01))
                (drive-forward :distance 0.1 :force T)
-               (open-gripper)))))
+               (sleep 1)
+               (open-gripper)
+            while
+            (and
+             (> main-intents 0)
+             (not (get-avg-range)))))))
 
 (defun drive-forward-slowly (distance &key
                                         ((:pred abort-predicate) (lambda () NIL))
@@ -190,7 +196,7 @@
 (defun open-gripper ()
   (format t "Opening gripper.~%")
   (send-joint-command "gripper" 0.6)
-  (sleep 0.5)
+  (sleep 0.65)
   (send-joint-command "gripper" 0.0))
 
 (defun relax-gripper ()
@@ -239,7 +245,7 @@
           (if (not *suspected-crossing*)
               ;; first crossing detected
               (progn
-                (format t "Detected first possible crossing.~%")
+                (format t "Detected first possible crossing. ~a~%" (get-avg-color :silenced T))
                 (setf *suspected-crossing* (ros-time)))
               ;; crossing has been detected before
               (progn
@@ -247,6 +253,7 @@
                        (time-passed (- now *suspected-crossing*)))
                   (if (> time-passed 0.25)
                       ;;(format t "Crossing!~%")
+                      (format t "Crossing! ~a~%" (get-avg-color :silenced T))
                       (with-lock-held (*crossing-lock*)
                         (setf *crossing* t)))))))
         (progn
@@ -307,29 +314,33 @@
                    (stop-driving))))
 
 (defun find-ball (max-degree &key insist)
-  (format t "Finding ball. max-degree ~a~%" max-degree)
-  (let ((turn-direction 1)
-        (angle max-degree))
-    (loop do
-      (format t "Still finding ball.~%")
-      (format t "angle: ~a~%" angle)
-      (turn (* turn-direction angle)
-            #'(lambda () (get-avg-range :silenced T)))
-      (if (= angle max-degree)
-          (setf angle 1.0)
-          (setf angle (* angle 2)))
-      (format t "New angle: ~a~%" angle)
-      (setf turn-direction (* -1 turn-direction))
-      (sleep 1)
-          while (and
-                 insist
-                 (not (get-avg-range)))))
-  (format t "Finished finding-ball.~%"))
+  (let ((first-intent T))
+    (format t "Finding ball. max-degree ~a~%" max-degree)
+    (let ((turn-direction 1)
+          (angle max-degree))
+      (loop do
+        (format t "Still finding ball.~%")
+        (format t "angle: ~a~%" angle)
+        (turn (* turn-direction angle)
+              #'(lambda () (get-avg-range :silenced T)))
+        (if first-intent
+            (progn
+              (setf first-intent nil)
+              (setf angle 1.0))
+            (setf angle (* angle 2)))
+        (format t "New angle: ~a~%" angle)
+        (setf turn-direction (* -1 turn-direction))
+        (sleep 1)
+            while (and
+                   insist
+                   (not (get-avg-range)))))
+    (format t "Finished finding-ball.~%")
+  (format t "Obstacle in Range: ~a.~%" (get-avg-range :silenced T))))
 
 (defun get-avg-range (&key silenced)
   (let ((ret (with-lock-held (*avg-range-lock*)
                (let ((range *avg-range*))
-                 (if (> (length (remove-if #'(lambda (e)  e) range)) 2)
+                 (if (> (length (remove-if #'(lambda (e)  e) range)) 1)
                      nil
                      (let ((values (remove-if #'(lambda (e) (not e)) range)))
                        (/ (reduce #'+ values) (length values))))))))
