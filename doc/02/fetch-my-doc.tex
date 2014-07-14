@@ -97,12 +97,18 @@
 	%%%%%%%%%% Hier beginnt das Dokument %%%%%%%%%%
 	\section{Einführung}\label{sec:Einfuehrung}
 		\autor{...}
+
+  \section{Technischer Aufbau}\label{sec:Aufbau}
+		\autor{...}
+    Unser Roboter wurde wie in der Aufgabenstellung beschrieben mittels der Lego NXT-Plattform, dem ROS-Framework und Common Lisp betrieben. Auf dem Roboter selber lief hierbei nur der NXT. Das Steuerprogramm wurde einem Rechner ausgeführt, welcher mittels USB-Schnittstelle mit dem NXT-Baustein kommunizieren konnte. Für die Schnittstelle zu ROS wurde das Paket NXT-ROS verwendet.
+
+  Am Roboter befinden sich zwei verschiedene Sensoren: Ein Ultraschall-Sensor (d) mit Ausrichtung nach vorne und ein RGB-Farbsensor (c) mit Ausrichtung nach unten. Des weiteren verfügt der Roboter über drei Motoren, von denen zwei für die Steuerung der beiden Hinterräder zuständig sind (a, b), und einer den Gripper kontrolliert (e).
     
     \begin{center}
       \begin{minipage}[t]{.49\textwidth}
         \begin{figure}[H]%
           \centering%
-          \caption{blbla}%
+          \caption{Die erste Version des Balls}%
           \label{}%
           \includegraphics[width=\columnwidth]{img/ball1.jpg}%
         \end{figure}
@@ -111,7 +117,7 @@
       \begin{minipage}[t]{.49\textwidth}
         \begin{figure}[H]%
           \centering%
-          \caption{blbla}%
+          \caption{Die finale Version des Balls}%
           \label{}%
           \includegraphics[width=\columnwidth]{img/ball2.jpg}%
         \end{figure}
@@ -125,6 +131,7 @@
       \begin{tikzonimage}[width=\textwidth]{img/robbyOpenSideTop.jpg}[image label]
         \draw [orange, line width=3pt] (0.52,0.37) circle [radius=0.8cm] node [xshift=-1.25cm] {c};
         \draw [orange, line width=3pt] (0.835,0.23) circle [x radius=1.0cm, y radius=1.55cm] node [xshift=-1.5cm] {d};
+        \draw [orange, line width=3pt] (0.6,0.55) circle [x radius=1.55cm, y radius=1.1cm] node [xshift=-1.5cm] {e};
       \end{tikzonimage}
     \end{figure}
     
