@@ -98,8 +98,33 @@
 	\section{Einführung}\label{sec:Einfuehrung}
 		\autor{...}
 
-  \section{Technischer Aufbau}\label{sec:Aufbau}
-		\autor{...}
+  
+		\section{Zielsetzung}
+		
+			\subsection{Problemsituation}
+			
+			Die gegebene Problemsituation dieses Projektes war folgende: 
+		
+			In einem abgegrenzten Feld befindet sich ein Ball (oder etwas ähnliches). Das Feld hat einen dunklen Boden und ist von einem hellen Rand umgeben. Der Ball soll von dem Roboter gefunden, gegriffen und dann aus dem Feld befördert werden. Bevor der Roboter den Ball aus dem Feld befördert, soll er dieses nicht verlassen.
+		
+			\subsection{Ziele}
+			
+			Die oben beschriebene Situation sollte mithilfe der Umsetzung folgender Teilziele gelöst werden. 
+			
+				\begin{itemize}
+					\item Der Roboter soll den Ball finden.
+					\item Der Ball soll angefahren werden.
+					\item Mithilfe des Greifers soll der Ball gegriffen werden.
+					\item Der Ball soll aus dem Bereich transportiert werden.
+					\item Ein überschreiten der weißen Fläche soll erkannt und darauf reagiert werden.
+				\end{itemize}
+				
+			\subsection{Rahmenbedingungen}
+				
+			Damit keine Wände oder umliegende Gegenstände als Ball erkannt werden können, muss ein Bereich vom maximalen Durchmesser des Feldes, um dieses herum, frei sein.
+
+	\section{Technischer Aufbau}\label{sec:Aufbau}
+		\autor{Tom Gehrke}
     Unser Roboter wurde wie in der Aufgabenstellung beschrieben mittels der Lego NXT-Plattform, dem ROS-Framework und Common Lisp betrieben. Auf dem Roboter selber lief hierbei nur der NXT. Das Steuerprogramm wurde einem Rechner ausgeführt, welcher mittels USB-Schnittstelle mit dem NXT-Baustein kommunizieren konnte. Für die Schnittstelle zu ROS wurde das Paket NXT-ROS verwendet.
 
   Am Roboter befinden sich zwei verschiedene Sensoren: Ein Ultraschall-Sensor (d) mit Ausrichtung nach vorne und ein RGB-Farbsensor (c) mit Ausrichtung nach unten. Des weiteren verfügt der Roboter über drei Motoren, von denen zwei für die Steuerung der beiden Hinterräder zuständig sind (a, b), und einer den Gripper kontrolliert (e).
@@ -146,31 +171,7 @@
       \end{tikzonimage}
     \end{figure}
 				
-		
-		\section{Zielsetzung}
-		
-			\subsection{Problemsituation}
-			
-			Die gegebene Problemsituation dieses Projektes war folgende: 
-		
-			In einem abgegrenzten Feld befindet sich ein Ball (oder etwas ähnliches). Das Feld hat einen dunklen Boden und ist von einem hellen Rand umgeben. Der Ball soll von dem Roboter gefunden, gegriffen und dann aus dem Feld befördert werden. Bevor der Roboter den Ball aus dem Feld befördert, soll er dieses nicht verlassen.
-		
-			\subsection{Ziele}
-			
-			Die oben beschriebene Situation sollte mithilfe der Umsetzung folgender Teilziele gelöst werden. 
-			
-				\begin{itemize}
-					\item Der Roboter soll den Ball finden.
-					\item Der Ball soll angefahren werden.
-					\item Mithilfe des Greifers soll der Ball gegriffen werden.
-					\item Der Ball soll aus dem Bereich transportiert werden.
-					\item Ein überschreiten der weißen Fläche soll erkannt und darauf reagiert werden.
-				\end{itemize}
 				
-			\subsection{Rahmenbedingungen}
-				
-			Damit keine Wände oder umliegende Gegenstände als Ball erkannt werden können, muss ein Bereich vom maximalen Durchmesser des Feldes, um dieses herum, frei sein.
-			
 		%\subsection{Referenzen}\label{sec:Referenzen}
 			%Es folgt eine Auflistung aller Referenzen zu den im Architekturentwurf erwähnten Fremdressourcen und verwendeten Dokumenten.
 				%\printbibliography[heading=none]
