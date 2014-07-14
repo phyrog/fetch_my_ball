@@ -10,3 +10,8 @@
 *.toc
 *blx.bib
 *.synctex
+*.dtx
+*.glo
+*.hd
+*.idx
+*.ins

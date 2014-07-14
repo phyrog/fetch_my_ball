@@ -7,47 +7,47 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage[ngerman]{babel}
-\usepackage{calc}
-\usepackage{csquotes}
+%\usepackage{calc}
+%\usepackage{csquotes}
 \usepackage{fancyhdr}
 \usepackage{booktabs}
-\usepackage{ctable}
-\usepackage[gen]{eurosym}
-\usepackage[norounding,german]{rccol}
+\usepackage{tabularx}
+%\usepackage[gen]{eurosym}
+%\usepackage[norounding,german]{rccol}
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage{rotating}
-\usepackage{rotfloat}
-\usepackage{lastpage}
+%\usepackage{rotating}
+%\usepackage{rotfloat}
+%\usepackage{lastpage}
 %\usepackage[style=alphabetic,natbib=true,maxnames=99]{biblatex}
 %\usepackage{bibgerm}
 %\usepackage{natbib}
-\usepackage{enumerate}
-\usepackage{keystroke}
+%\usepackage{enumerate}
+%\usepackage{keystroke}
 \usepackage[leqno]{amsmath}
 \usepackage{amssymb}
-\usepackage{listings}
-\lstset{numbers=left, numberstyle=\tiny, numbersep=5pt,tabsize=2,breaklines=true}
-\usepackage{verbatim}
-\usepackage{moreverb}
+%\usepackage{listings}
+%\lstset{numbers=left, numberstyle=\tiny, numbersep=5pt,tabsize=2,breaklines=true}
+%\usepackage{verbatim}
+%\usepackage{moreverb}
 \usepackage[breaklinks=true,pdfborder={0 0 0}]{hyperref}
 \usepackage{pgf}
 \usepackage{tikz}
-\usepackage[weather]{ifsym}
-\usepackage{slashbox}
+%\usepackage[weather]{ifsym}
+%\usepackage{slashbox}
 %\usepackage{ipa}	%\rightt
-\usepackage{MnSymbol}
-\usepackage{listings}
-\usepackage{fancybox}
+%\usepackage{MnSymbol}
+%\usepackage{fancybox}
 \usepackage[colorinlistoftodos,backgroundcolor=orange!50,bordercolor=orange]{todonotes}
 \usepackage{longtable}
-\usepackage{setspace}
-\usepackage{totcount}
+%\usepackage{setspace}
+%\usepackage{totcount}
 \usepackage[backend=bibtex8,style=reading,sortlocale=de_DE,entrykey=false,useauthor=false]{biblatex}
 \renewcommand{\bibliography}[1]{\addbibresource{#1.bib}}
 \newcommand{\cit}[1]{[\cite{#1}]}
 
-\usetikzlibrary{calc,decorations.pathreplacing,patterns,calc,intersections,positioning}
+%\usetikzlibrary{calc,decorations.pathreplacing,patterns,calc,intersections,positioning}
+\usetikzlibrary{arrows,decorations.pathmorphing,backgrounds,positioning,fit,petri,through}
 
 \setcounter{secnumdepth}{3}
 \let\verbatiminput=\verbatimtabinput

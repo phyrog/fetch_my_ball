@@ -1,14 +1,15 @@
 \documentclass{fetch-my-doc}
 \usepackage{tabu}
-\usepackage{multirow}
+%\usepackage{multirow}
 \usepackage{siunitx}
-\usepackage{enumitem}
-\usepackage{fancyvrb}
-\usepackage{breakurl}
-\usepackage{tocloft}
-\usepackage{pdflscape}
-\usepackage{ltxtable}
-\usepackage{filecontents}
+%\usepackage{enumitem}
+%\usepackage{fancyvrb}
+%\usepackage{breakurl}
+%\usepackage{tocloft}
+%\usepackage{pdflscape}
+%\usepackage{ltxtable}
+%\usepackage{filecontents}
+\usepackage{onimage}
 
 \sisetup{output-decimal-marker = {,}}
 
@@ -58,6 +59,17 @@
 \setcounter{tocdepth}{4}
 \setcounter{secnumdepth}{3}
 
+\tikzset{
+    image label/.style={
+        every node/.style={
+            fill=white,
+            fill opacity=.5,
+            text opacity=1,
+            text=orange,
+            font=\fontfamily{phv}\selectfont\Large\bfseries}
+        }
+}
+
 \begin{document}
 	\sloppy
 	\input{fetch-my-doc-title.tex}
@@ -85,6 +97,48 @@
 	%%%%%%%%%% Hier beginnt das Dokument %%%%%%%%%%
 	\section{Einführung}\label{sec:Einfuehrung}
 		\autor{...}
+    
+    \begin{center}
+      \begin{minipage}[t]{.49\textwidth}
+        \begin{figure}[H]%
+          \centering%
+          \caption{blbla}%
+          \label{}%
+          \includegraphics[width=\columnwidth]{img/ball1.jpg}%
+        \end{figure}
+      \end{minipage}
+      \hfill
+      \begin{minipage}[t]{.49\textwidth}
+        \begin{figure}[H]%
+          \centering%
+          \caption{blbla}%
+          \label{}%
+          \includegraphics[width=\columnwidth]{img/ball2.jpg}%
+        \end{figure}
+      \end{minipage}
+    \end{center}
+    
+    \begin{figure}[H]%
+      \centering%
+      \caption{blbla}%
+      \label{}%
+      \begin{tikzonimage}[width=\textwidth]{img/robbyOpenSideTop.jpg}[image label]
+        \draw [orange, line width=3pt] (0.52,0.37) circle [radius=0.8cm] node [xshift=-1.25cm] {c};
+        \draw [orange, line width=3pt] (0.835,0.23) circle [x radius=1.0cm, y radius=1.55cm] node [xshift=-1.5cm] {d};
+      \end{tikzonimage}
+    \end{figure}
+    
+    \begin{figure}[H]%
+      \centering%
+      \caption{blbla}%
+      \label{}%
+      \begin{tikzonimage}[width=\textwidth]{img/robbyOpenBottom.jpg}[image label]
+        \draw [orange, line width=3pt] (0.4,0.39) circle [x radius=2.5cm, y radius=0.85cm] node [xshift=-2.95cm] {a};
+        \draw [orange, line width=3pt] (0.4,0.56) circle [x radius=2.5cm, y radius=0.85cm] node [xshift=-2.95cm] {b};
+        \draw [orange, line width=3pt] (0.66,0.485) circle [radius=0.8cm] node [xshift=-1.25cm] {c};
+      \end{tikzonimage}
+    \end{figure}    
+    
 				
 		%\subsection{Referenzen}\label{sec:Referenzen}
 			%Es folgt eine Auflistung aller Referenzen zu den im Architekturentwurf erwähnten Fremdressourcen und verwendeten Dokumenten.
