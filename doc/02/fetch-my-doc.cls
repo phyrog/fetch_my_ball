@@ -47,7 +47,7 @@
 \newcommand{\cit}[1]{[\cite{#1}]}
 
 %\usetikzlibrary{calc,decorations.pathreplacing,patterns,calc,intersections,positioning}
-\usetikzlibrary{arrows,decorations.pathmorphing,backgrounds,positioning,fit,petri,through}
+\usetikzlibrary{arrows,automata,decorations.pathmorphing,backgrounds,positioning,fit,petri,through}
 
 \setcounter{secnumdepth}{3}
 \let\verbatiminput=\verbatimtabinput

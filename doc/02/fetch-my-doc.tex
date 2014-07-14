@@ -11,6 +11,8 @@
 %\usepackage{filecontents}
 \usepackage{onimage}
 
+\usepackage{verbatim}
+
 \sisetup{output-decimal-marker = {,}}
 
 \definecolor{darkgreen}{rgb}{0,.5,0}
@@ -70,6 +72,17 @@
         }
 }
 
+\tikzset{
+  state/.style={
+         rectangle,
+         rounded corners,
+         draw=black, very thick,
+         minimum height=2em,
+         inner sep=2pt,
+         text centered,
+         },
+}
+
 \begin{document}
 	\sloppy
 	\input{fetch-my-doc-title.tex}
@@ -92,39 +105,57 @@
 		%\end{tabularx}	
 		%\clearpage
 	
-	\rowcolors*{0}{}{lightgray!40}
+	%\rowcolors*{0}{}{lightgray!40}
 	
 	%%%%%%%%%% Hier beginnt das Dokument %%%%%%%%%%
 	\section{Einführung}\label{sec:Einfuehrung}
-		\autor{Hannes Welling}
+		\autor{Hannes, Andreas}
 		
-		Im Rahmen der Veranstaltung \textit{Lisp Tutorial} haben wir ein Projekt durchgeführt, um die in den Vorlesungen gewonnenen Kenntnisse zu demonstrieren und zu festigen.
+		Im Rahmen der Veranstaltung \textit{Lisp Tutorial} haben wir ein Projekt durchgeführt, um die in den Vorlesungen gewonnenen Kenntnisse in die Praxis umzusetzen.
 		
-		In dieser Dokumentation wird zunächst auf die Situation und Ziele des Projektes eingegangen und danach die harwaretechnische, wie auch auf die softwareteschnische Umsezung erläutert.
-		
-		\section{Zielsetzung}
-		
-			\subsection{Problemsituation}
-			
-			Die gegebene Problemsituation dieses Projektes war folgende: 
-		
-			In einem abgegrenzten Feld befindet sich ein Ball (oder etwas ähnliches). Das Feld hat einen dunklen Boden und ist von einem hellen Rand umgeben. Der Ball soll von dem Roboter gefunden, gegriffen und dann aus dem Feld befördert werden. Bevor der Roboter den Ball aus dem Feld befördert, soll er dieses nicht verlassen.
-		
-			\subsection{Ziele}
-			
-			Die oben beschriebene Situation sollte mithilfe der Umsetzung folgender Teilziele gelöst werden. 
-			
-				\begin{itemize}
-					\item Der Roboter soll den Ball finden.
-					\item Der Ball soll angefahren werden.
-					\item Mithilfe des Greifers soll der Ball gegriffen werden.
-					\item Der Ball soll aus dem Bereich transportiert werden.
-					\item Ein überschreiten der weißen Fläche soll erkannt und darauf reagiert werden.
-				\end{itemize}
-				
-			\subsection{Rahmenbedingungen}
-				
-			Damit keine Wände oder umliegende Gegenstände als Ball erkannt werden können, muss ein Bereich vom maximalen Durchmesser des Feldes, um dieses herum, frei sein.
+		In dieser Dokumentation wird auf die Aufgabenstellung, die Zielsetzung und die Rahmenbedingungen des Projekts eingegangen. Weiterhin wird die Umsetzung sowohl in der Hardware, als auch in der Software erläutert und auf bei der Durchführung aufgetretene Probleme eingegangen.
+    
+    \subsection{Rahmenbedingungen}\label{sec:rahmenbedingungen}
+      \autor{Andreas}
+      In unserem Projekt soll der \textit{Lego Mindstorms NXT} zusammen mit anderen Legokomponenten verbaut und mittels \textit{ROSLisp} programmiert werden.
+      Der von uns zu verwendende Bausatz besteht aus folgenden relevanten Bauteilen:
+      \begin{itemize}
+        \item Drei Schrittmotiren,
+        \item ein Ultraschallsensor,
+        \item ein Farbsensor (RGB),
+        \item ein Ton-/Schallsensor und
+        \item zwei Stoßsensoren.
+      \end{itemize}
+    
+    \subsection{Aufgabenstellung}
+     \autor{Andreas}
+      Unter den in Abschnitt \ref{sec:rahmenbedingungen} erläuterten Bedingungen soll ein Roboter konstruiert werden, der eine einfache Aufgabe lösen kann. Dabei soll er autonom vorgehen.
+      
+    
+  \section{Problemstellung}
+    \autor{Hannes, Andreas}
+    Unter den gegebenen Bedingungen haben wir folgende zu lösende Problemstellung gewählt (Auszug aus der bereits abgegebenen Projektübersicht).
+    
+    \glqq\textit{Unsere gewählte Problemstellung beinhaltet das Finden, Aufheben und Zurückbringen eines farbigen Balls in einem bekannten rechteckigen Bereich. Der Bereich ist durch einen einfarbigen Rand und gegebenenfalls eine Bande begrenzt. Größe des Bereichs und Dimensionen sowie Farbe des Randes und der Bande sind im Verlauf des Projekts festzulegen. Der Ball soll an den Startpunkt des Roboters transportiert werden.}\grqq
+    
+    Im Verlauf des Projekts hat sich diese Problemstellung insofern geändert, als dass der Ball nicht zurückgebracht werden soll, sondern außerhalb des markierten Bereichs transportiert und dort abgelegt werden soll. Die Ausmaße des Bereichs betragen ca. $\SI{80}{\centi\meter} \cdot \SI{80}{\centi\meter}$, die Farbe des Bereichs trägt die RGB-Werte \verb+0.0 0.0 0.0+, die Breite des Randes beträgt ca. \SI{20}{\centi\meter}, die Farbe des Randes ist \verb+1.0 1.0 1.0+ und die Farbe des Balls ist irrelevant.
+    
+    Weiterhin muss um den Rand nach außen hin in jede Richtung mindestens ca. \SI{113}{\centi\meter} Abstand zu etwaigen Gegenständen bestehen, damit der von uns verwendete Ultraschallsensor keine irrelevanten Dinge wahrnimmt und somit der Ablauf unseres Programms gestört wird.
+  
+    \subsection{Ziele}
+    
+    Die oben beschriebene Situation sollte mithilfe der Umsetzung folgender Teilziele gelöst werden. 
+    
+      \begin{itemize}
+        \item Der Roboter soll den Ball finden.
+        \item Der Ball soll angefahren werden.
+        \item Mithilfe des Greifers soll der Ball gegriffen werden.
+        \item Der Ball soll aus dem Bereich transportiert werden.
+        \item Ein überschreiten der weißen Fläche soll erkannt und darauf reagiert werden.
+      \end{itemize}
+      
+      
+    Damit keine Wände oder umliegende Gegenstände als Ball erkannt werden können, muss ein Bereich vom maximalen Durchmesser des Feldes, um dieses herum, frei sein.
 
 	\section{Technischer Aufbau}\label{sec:Aufbau}
 		\autor{Tom Gehrke}
@@ -177,6 +208,36 @@
   \section{Programmablauf}\label{sec:Programmablauf}
     \autor{Tom Gehrke, Hannes Welling}
     Zunächst versucht der Roboter den Ball im abgetrennten Bereich zu finden. Dazu dreht er sich um seine eigene Achse um einen Gegenstand zu finden. Sobald ein Gegenstand registriert wird, fährt der Roboter auf diesen zu. Aufgrund der Ungenauigkeiten des Sensors und der Motoren, kann jedoch eine exakte Position des Balls noch nicht bestimmt werden. Deshalb nähert sich der Roboter so lange dem Ball, bis dieser nicht mehr im Sichtfeld des Ultraschallsensors liegt. Nun versucht der Roboter den Ball wieder zu finden und dreht sich alternierend um zunehmende Gradzahlen in beide Richtungen. Sobald der Ball wieder gefunden wurde, nähert sich der Roboter dem Ball weiter. Befindet sich der Ball in Reichweite des Grippers, wird dieser geschlossen und der Ball damit gegriffen. Abschließend fährt der Roboter mit dem Ball außerhalb des Bereiches und öffnet den Gripper, um den Ball los zu lassen.
+    
+    \begin{tikzpicture}[->,>=stealth']
+       \node[state] (QUERY) {Wurstsalat mit Käse};
+
+       \node[state, node distance=6cm, text width=3cm, right of=QUERY, yshift=+3cm] (RAKE)
+        {Käse mit Holundersaft.};
+
+       \node[state, right of=RAKE, node distance=5cm, text width=3cm] (ACK) 
+        {Lecker Hackbraten};
+
+       \node[state, below of=ACK, node distance=5cm] (EPC) 
+        {Blabla};
+
+       \path (QUERY)  edge
+                        [bend left=50]  node
+                                          [anchor=south,above,text width=4cm]
+                                          {Aktion Saubermann}                  (RAKE)
+             (RAKE)   edge                                                     (ACK)
+             (ACK)    edge              node
+                                          [anchor=east,right,
+                                          text width=3cm,xshift=1em]
+                                          {Aktion Sorgenrind}                  (EPC)
+
+             (ACK)    edge
+                        [bend left=45]  node
+                                          [anchor=north,below,text width=4cm,
+                                          yshift=-2em,xshift=-2em]
+                                          {Aktions Angebot}                    (QUERY)
+       ;
+  \end{tikzpicture}
 		
 		\subsection{border-patrol}
 		Um sicherzugehen, dass der Roboter das abgegrenzte Feld nicht verlässt, werden durch eine nebenläufige Funktion die Werte des Farbsensors, der auf den Boden gerichtet ist, überwacht. Gibt dieser Farbsensor innerhalb von etwas mehr als einer viertel Sekunde durchgehend den Wert für \textit{Weiß} zurück, wird eine globale Variable gesetzt, auf die der restliche Code reagiert und den Roboter stoppen und um \SI{180}{\degree} rotieren lässt. Es wird nicht sofort auf einen Wert für \textit{Weiß} reagiert, da so ein Wert, durch Unregelmäßigkeiten im Boden, vorkommen kann, ohne das der Roboter das Feld tatsächlich überschritten hat.
