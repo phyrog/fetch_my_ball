@@ -41,6 +41,8 @@ innerhalb des Rechtecks, in dem Robby sich befindet.")
 (defvar *reached-target-area* nil
   "Gibt an, ob Robby nach dem Greifen die Grenze überschritten hat.
 Wird beim Ablegen des Balls benötigt.")
+(defvar *achieved-goal* nil
+  "Gibt an, ob das Ziel erreicht wurde.")
 
 (defun init-driver ()
   "Initialisert alle benötigten Variablen und Vorgänge,
@@ -92,6 +94,7 @@ Findet Robby bei der kompletten Drehung jedoch keinen Gegenstand, so dreht er si
 Befindet Robby sich in der Prä-Greifposition, fährt er ca. 2cm geradeaus und schließt
 anschließend den Greifarm. Dann fährt er so lange geradeaus, bis er die Grenze überschreitet,
 fährt anschließend weitere 10cm und öffnet den Greifarm."
+  (setf *achieved-goal* nil)
   (let ((turn-direction 1))
     (let ((main-intents 3))
       (loop do
@@ -129,10 +132,12 @@ fährt anschließend weitere 10cm und öffnet den Greifarm."
                (drive-forward :distance 0.1 :force T)
                (sleep 1)
                (open-gripper)
+               (setf *achieved-goal* T)
             while
             (and
              (> main-intents 0)
-             (not (get-avg-range)))))))
+             (not (get-avg-range))
+             (not *achieved-goal*))))))
 
 (defun drive-forward-slowly (distance &key
                                         ((:pred abort-predicate) (lambda () NIL))
@@ -358,7 +363,9 @@ Robby hält an und dreht sich um ca 180°."
     *crossing*))
 
 (defun turn (degree &optional (abort-predicate (lambda () NIL)))
-  "Dreht Robby auf der Stelle um ca. `degree' grad.
+  "Dreht Robby auf der Stelle um ca. `degree' grad. Bei positiven
+Werten dreht er sich im Uhrzeigersinn, bei negative Werten entgegen
+dem Uhrzeigersinn.
 Bricht ab, sobald `abort-predicate' erfüllt ist."
   (format t "Turning ~a degree.~%" degree)
   (setf degree (* degree 0.0174532925))
@@ -375,9 +382,12 @@ Bricht ab, sobald `abort-predicate' erfüllt ist."
                    (stop-driving))))
 
 (defun find-ball (max-degree &key insist)
-  "Sucht den Ball in einem Winkel von `max-degree'.
+  "Sucht den Ball in einem Winkel von `max-degree' und hält beim registrieren eines
+Gegenstands an.
 Wenn `insist' nicht `nil' ist, sucht Robby weiter, nachdem er den Ball gefunden hat,
-sich aber zu weit bewegt hat und der Ultraschallsensor somit keinen Ball mehr registriert."
+sich aber zu weit bewegt hat und der Ultraschallsensor somit keinen Ball mehr registriert.
+Dabei dreht er sich 1° in eine richtung, dann 2° in die andere richtung, usw. (Gradzahl
+verdoppelt sich immer, Richtung wechselt sich ab), bis maximal 400°."
   (let ((first-intent T))
     (format t "Finding ball. max-degree ~a~%" max-degree)
     (let ((turn-direction 1)
@@ -397,7 +407,8 @@ sich aber zu weit bewegt hat und der Ultraschallsensor somit keinen Ball mehr re
         (sleep 1)
             while (and
                    insist
-                   (not (get-avg-range)))))
+                   (not (get-avg-range))
+                   (<= angle 400))))
     (format t "Finished finding-ball.~%")
   (format t "Obstacle in Range: ~a.~%" (get-avg-range :silenced T))))
 
