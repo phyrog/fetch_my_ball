@@ -175,8 +175,11 @@
     \end{figure}
 				
   \section{Programmablauf}\label{sec:Programmablauf}
-    \autor{Tom Gehrke}
+    \autor{Tom Gehrke, Hannes Welling}
     Zunächst versucht der Roboter den Ball im abgetrennten Bereich zu finden. Dazu dreht er sich um seine eigene Achse um einen Gegenstand zu finden. Sobald ein Gegenstand registriert wird, fährt der Roboter auf diesen zu. Aufgrund der Ungenauigkeiten des Sensors und der Motoren, kann jedoch eine exakte Position des Balls noch nicht bestimmt werden. Deshalb nähert sich der Roboter so lange dem Ball, bis dieser nicht mehr im Sichtfeld des Ultraschallsensors liegt. Nun versucht der Roboter den Ball wieder zu finden und dreht sich alternierend um zunehmende Gradzahlen in beide Richtungen. Sobald der Ball wieder gefunden wurde, nähert sich der Roboter dem Ball weiter. Befindet sich der Ball in Reichweite des Grippers, wird dieser geschlossen und der Ball damit gegriffen. Abschließend fährt der Roboter mit dem Ball außerhalb des Bereiches und öffnet den Gripper, um den Ball los zu lassen.
+		
+		\subsection{border-patrol}
+		Um sicherzugehen, dass der Roboter das abgegrenzte Feld nicht verlässt, werden durch eine nebenläufige Funktion die Werte des Farbsensors, der auf den Boden gerichtet ist, überwacht. Gibt dieser Farbsensor innerhalb von etwas mehr als einer viertel Sekunde durchgehend den Wert für \textit{Weiß} zurück, wird eine globale Variable gesetzt, auf die der restliche Code reagiert und den Roboter stoppen und um \SI{180}{\degree} rotieren lässt. Es wird nicht sofort auf einen Wert für \textit{Weiß} reagiert, da so ein Wert, durch Unregelmäßigkeiten im Boden, vorkommen kann, ohne das der Roboter das Feld tatsächlich überschritten hat.
 
 				
 		%\subsection{Referenzen}\label{sec:Referenzen}
