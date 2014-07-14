@@ -295,7 +295,7 @@ Motors wird beendet.
 
 (defun border-patrol ()
   "Grenzkontrolle. Überprüft, ob Robby sich auf der Grenze befindet.
-Wird anhand des RGB-Sensordś eine potentielle Grenzüberfahrt registriert,
+Wird anhand des RGB-Sensors eine potentielle Grenzüberfahrt registriert,
 wird nach 0,25 Sekunden erneut überprüft, ob der RGB-Sensor immernoch eine
 Grenzüberfahrt anzeigt. Erst wenn das der Fall ist, wird angenommen, dass
 tatsächlich eine Grenzüberfahrt passiert ist."
@@ -478,7 +478,8 @@ Die Werte werden alle auf `0' gesetzt."
 
 (defun approach ()
   "Lässt Robby solange geradeausfahren, wie der Ultraschallsensor einen Gegenstand
-innerhalb der maximalen Reichweite erkennt oder Robby die Grenze überfährt."
+innerhalb der maximalen Reichweite erkennt und Robby sich nicht in Greifreichweite
+des Gegenstands befindet, oder Robby die Grenze überfährt."
   (format t "Approaching...~%")
   (let ((last-known-range (get-avg-range)))
     (if last-known-range
